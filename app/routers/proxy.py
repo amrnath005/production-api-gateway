@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Response
 import httpx
 
+from app.core.exceptions import GatewayException
 from app.core.observability import build_correlation_headers
 from app.core.routes import SERVICE_REGISTRY
 from app.services.gateway import gateway_service
@@ -34,8 +35,8 @@ async def proxy(
 
     headers = dict(request.headers)
     correlation_headers = build_correlation_headers(
-        request_id=request.state.request_id,
-        correlation_id=request.headers.get("X-Correlation-ID") or request.state.request_id,
+        request_id=getattr(request.state, "request_id", "gateway-req"),
+        correlation_id=request.headers.get("X-Correlation-ID") or getattr(request.state, "request_id", "gateway-req"),
     )
     headers.update(correlation_headers)
 
@@ -67,14 +68,14 @@ async def proxy(
             )
         )
 
-    except RuntimeError as e:
+    except GatewayException as e:
 
         raise HTTPException(
-            status_code=503,
-            detail=str(e)
+            status_code=e.status_code,
+            detail=e.message
         )
 
-    except httpx.ConnectError:
+    except (httpx.ConnectError, httpx.NetworkError):
 
         raise HTTPException(
             status_code=502,

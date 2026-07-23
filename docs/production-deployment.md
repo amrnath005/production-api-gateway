@@ -9,6 +9,12 @@ Required repository settings for deployment:
 - `ENABLE_K8S_DEPLOY=true` repository variable
 - `KUBE_CONFIG` repository secret
 
+Production secret requirements:
+
+- `JWT_SECRET` and `API_KEY` must be at least 16 characters.
+- Placeholder values such as `change-me-in-production` are rejected when `ENVIRONMENT=production`.
+- `DATABASE_URL` must be explicitly configured and must not use the localhost development default.
+
 Images are pushed to GitHub Container Registry:
 
 - `ghcr.io/<owner>/api-gateway`

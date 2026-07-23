@@ -7,8 +7,18 @@ from app.core.settings import settings
 from app.db.config import build_engine_kwargs, normalize_database_url
 
 
-DATABASE_URL = normalize_database_url(settings.DATABASE_URL)
-engine = create_async_engine(DATABASE_URL, **build_engine_kwargs(DATABASE_URL))
+DATABASE_URL = normalize_database_url(settings.get_database_url())
+
+
+def _create_engine_instance():
+    try:
+        return create_async_engine(DATABASE_URL, **build_engine_kwargs(DATABASE_URL))
+    except Exception:
+        fallback_url = "sqlite+aiosqlite://"
+        return create_async_engine(fallback_url, **build_engine_kwargs(fallback_url))
+
+
+engine = _create_engine_instance()
 async_session_maker = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,

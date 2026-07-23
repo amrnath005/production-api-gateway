@@ -15,18 +15,14 @@ def _is_integrity_error(exc: Exception) -> bool:
     return exc.__class__.__name__ == "IntegrityError"
 
 
-async def get_user_repository():
-    try:
-        from app.db.session import session_scope
-        from app.repositories.users import UserRepository
-    except ImportError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Database dependencies are not installed: {exc.name}",
-        ) from exc
+from sqlalchemy.ext.asyncio import AsyncSession
 
-    async with session_scope() as session:
-        yield UserRepository(session)
+from app.db.session import get_session
+from app.repositories.users import UserRepository
+
+
+async def get_user_repository(session: AsyncSession = Depends(get_session)) -> UserRepository:
+    return UserRepository(session)
 
 
 @router.post(

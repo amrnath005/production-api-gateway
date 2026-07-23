@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+from app.core.exceptions import ServiceUnavailableError
 from app.services.health_monitor import health_monitor
 
 
@@ -15,9 +16,7 @@ class RoundRobinLoadBalancer:
     ) -> str:
 
         if not instances:
-            raise ValueError(
-                f"No backend instances configured for '{service_name}'"
-            )
+            raise ServiceUnavailableError(service_name)
 
         total = len(instances)
 
@@ -37,9 +36,7 @@ class RoundRobinLoadBalancer:
             if health_monitor.is_healthy(backend):
                 return backend
 
-        raise RuntimeError(
-            f"All backend instances for '{service_name}' are unavailable."
-        )
+        raise ServiceUnavailableError(service_name)
 
 
 load_balancer = RoundRobinLoadBalancer()

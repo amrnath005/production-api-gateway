@@ -110,7 +110,10 @@ class CacheService:
     async def close(self) -> None:
         if self._client is not None:
             try:
-                await self._client.close()
+                if hasattr(self._client, "aclose"):
+                    await self._client.aclose()
+                else:
+                    await self._client.close()
             except Exception:
                 pass
 

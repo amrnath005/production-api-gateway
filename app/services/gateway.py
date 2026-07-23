@@ -1,6 +1,7 @@
 import httpx
 from opentelemetry import trace
 
+from app.core.exceptions import BackendTimeoutError
 from app.core.observability import set_request_context
 from app.core.routes import SERVICE_REGISTRY
 from app.core.settings import settings
@@ -11,6 +12,28 @@ from app.services.retry import retry_service
 from app.services.metrics import BACKEND_FAILURES, BACKEND_REQUESTS, FAILED_REQUESTS, REQUEST_COUNT, REQUEST_LATENCY, SUCCESSFUL_REQUESTS
 
 tracer = trace.get_tracer("gateway.gateway_service")
+
+HOP_BY_HOP_HEADERS = {
+    "host",
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailers",
+    "transfer-encoding",
+    "upgrade",
+    "content-length",
+}
+
+
+def sanitize_forward_headers(headers: dict) -> dict:
+    """Filter out hop-by-hop headers before forwarding requests to backend services."""
+
+    return {
+        k: v for k, v in headers.items()
+        if k.lower() not in HOP_BY_HOP_HEADERS
+    }
 
 
 class GatewayService:
@@ -45,6 +68,8 @@ class GatewayService:
         if path:
             target_url += f"/{path}"
 
+        forward_headers = sanitize_forward_headers(headers)
+
         circuit_breaker.before_request(backend_url)
 
         with tracer.start_as_current_span("gateway.forward_request") as span:
@@ -64,7 +89,7 @@ class GatewayService:
                     return await self._client.request(
                         method=method,
                         url=target_url,
-                        headers=headers,
+                        headers=forward_headers,
                         params=params,
                         content=body,
                     )
@@ -78,9 +103,15 @@ class GatewayService:
 
                 return response
 
+            except httpx.TimeoutException as exc:
+                circuit_breaker.record_failure(backend_url)
+                BACKEND_FAILURES.labels(service=service, backend=backend_url).inc()
+                REQUEST_COUNT.labels(method=method, endpoint=path or "/", status="504").inc()
+                FAILED_REQUESTS.labels(method=method, endpoint=path or "/", status="504").inc()
+                raise BackendTimeoutError(service) from exc
+
             except (
                 httpx.ConnectError,
-                httpx.TimeoutException,
                 httpx.NetworkError,
             ) as exc:
 

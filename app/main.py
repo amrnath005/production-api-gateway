@@ -3,6 +3,8 @@ import asyncio
 
 from fastapi import FastAPI
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.middleware.logging import log_requests
 from app.middleware.rate_limit import rate_limit
 
@@ -50,8 +52,6 @@ async def lifespan(app: FastAPI):
         await gateway_service.close()
         await cache_service.close()
         await close_database_pool()
-
-
 configure_logging()
 
 app = FastAPI(
@@ -65,6 +65,14 @@ configure_tracing(app)
 # -------------------------
 # Middleware
 # -------------------------
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.middleware("http")(log_requests)
 app.middleware("http")(rate_limit)
@@ -87,7 +95,7 @@ app.include_router(profile_router)
 app.include_router(admin_router)
 
 # -------------------------
-# Existing Routes
+# Gateway & Domain Routes
 # -------------------------
 
 app.include_router(users.router)

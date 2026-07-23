@@ -1,5 +1,6 @@
 import time
 
+from app.core.exceptions import CircuitOpenError
 from app.services.metrics import CIRCUIT_OPEN
 
 
@@ -39,9 +40,7 @@ class CircuitBreaker:
 
             else:
 
-                raise RuntimeError(
-                    f"Circuit OPEN for {backend}"
-                )
+                raise CircuitOpenError(backend)
 
     def record_success(self, backend: str):
 

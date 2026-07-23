@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import hash_password
 from app.db.models.user import User
 from app.models.user import UserCreate, UserUpdate
 
@@ -10,7 +11,12 @@ class UserRepository:
         self._session = session
 
     async def create(self, data: UserCreate) -> User:
-        user = User(**data.model_dump())
+        user_dict = data.model_dump()
+        raw_password = user_dict.pop("password", None)
+        if raw_password:
+            user_dict["hashed_password"] = hash_password(raw_password)
+
+        user = User(**user_dict)
         self._session.add(user)
         await self._commit()
         await self._session.refresh(user)
@@ -18,6 +24,10 @@ class UserRepository:
 
     async def get(self, user_id: int) -> User | None:
         return await self._session.get(User, user_id)
+
+    async def get_by_username(self, username: str) -> User | None:
+        result = await self._session.execute(select(User).where(User.username == username))
+        return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> User | None:
         result = await self._session.execute(select(User).where(User.email == email))
@@ -34,7 +44,12 @@ class UserRepository:
         if user is None:
             return None
 
-        for field, value in data.model_dump(exclude_unset=True).items():
+        update_dict = data.model_dump(exclude_unset=True)
+        raw_password = update_dict.pop("password", None)
+        if raw_password:
+            update_dict["hashed_password"] = hash_password(raw_password)
+
+        for field, value in update_dict.items():
             setattr(user, field, value)
 
         await self._commit()

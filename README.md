@@ -35,6 +35,13 @@ curl http://localhost:8003/health
 - `JAEGER_ENDPOINT` targets the Jaeger container for tracing export.
 - `PROMETHEUS_URL` and `GRAFANA_URL` are used by the monitoring configuration.
 
+### Secret management
+- Configuration is loaded through `pydantic-settings` in [app/core/settings.py](app/core/settings.py).
+- Sensitive values use `SecretStr` for `JWT_SECRET`, `API_KEY`, and `DATABASE_URL`.
+- Development mode allows placeholder values from [.env.example](.env.example).
+- Production mode rejects placeholder secrets, enforces minimum secret length, and requires an explicitly configured `DATABASE_URL`.
+- Access secret values in application code through `settings.get_jwt_secret()`, `settings.get_api_key()`, and `settings.get_database_url()` rather than reading fields directly.
+
 ### Persistence
 - PostgreSQL persistence is implemented with SQLAlchemy 2.x async sessions.
 - Alembic migrations are stored under [alembic](alembic).

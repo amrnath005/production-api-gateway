@@ -11,7 +11,10 @@ from typing import Any
 
 from fastapi import FastAPI
 from opentelemetry import trace
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+try:
+    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+except Exception:
+    JaegerExporter = None
 from opentelemetry.instrumentation import fastapi as fastapi_instrumentation
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
@@ -118,8 +121,11 @@ def configure_tracing(app: FastAPI) -> None:
         jaeger_endpoint = os.getenv("JAEGER_ENDPOINT", "http://localhost:14268/api/traces")
 
         try:
-            jaeger_exporter = JaegerExporter(collector_endpoint=jaeger_endpoint)
-            tracer_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
+            if JaegerExporter is not None:
+                jaeger_exporter = JaegerExporter(collector_endpoint=jaeger_endpoint)
+                tracer_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
+            else:
+                tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
         except Exception:
             tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
@@ -127,6 +133,12 @@ def configure_tracing(app: FastAPI) -> None:
 
         FastAPIInstrumentor.instrument_app(app)
         HTTPXClientInstrumentor().instrument()
+
+        try:
+            from opentelemetry.instrumentation.redis import RedisInstrumentor
+            RedisInstrumentor().instrument()
+        except Exception:
+            pass
 
         try:
             original_get_route_details = fastapi_instrumentation._get_route_details

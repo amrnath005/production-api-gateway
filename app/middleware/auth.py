@@ -1,4 +1,4 @@
-from fastapi import Request
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.core.security import verify_token
@@ -12,13 +12,19 @@ PUBLIC_PATHS = {
     "/docs",
     "/openapi.json",
     "/redoc",
+    "/metrics",
+    "/api/v1/health",
+    "/api/v1/health/db",
+    "/api/v1/ready",
+    "/api/v1/login",
 }
 
 
 async def authenticate(request: Request, call_next):
 
     # Skip authentication for public routes
-    if request.url.path in PUBLIC_PATHS:
+    path = request.url.path.rstrip("/") or "/"
+    if path in PUBLIC_PATHS or request.url.path in PUBLIC_PATHS:
         return await call_next(request)
 
     # Read Authorization header
@@ -48,6 +54,11 @@ async def authenticate(request: Request, call_next):
         # Store decoded user information
         request.state.user = payload
 
+    except HTTPException as exc:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
     except Exception:
         return JSONResponse(
             status_code=401,

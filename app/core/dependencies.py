@@ -1,3 +1,4 @@
+import secrets
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException
@@ -11,7 +12,7 @@ async def get_api_key(x_api_key: str = Header(default=None, alias=settings.API_K
     if not x_api_key:
         raise HTTPException(status_code=401, detail="API key is required")
 
-    if x_api_key != settings.API_KEY:
+    if not secrets.compare_digest(x_api_key, settings.get_api_key()):
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
     return x_api_key

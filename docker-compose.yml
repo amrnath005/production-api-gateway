@@ -12,6 +12,8 @@ services:
       ENVIRONMENT: production
       USER_SERVICE_URL: http://user-service:8002
       ORDER_SERVICE_URL: http://order-service:8003
+      JWT_SECRET: ${JWT_SECRET:-local-docker-jwt-secret-minimum-32-chars}
+      API_KEY: ${API_KEY:-local-docker-api-key-minimum-32-chars}
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: postgresql+asyncpg://gateway:gateway_password@postgres:5432/api_gateway
       DATABASE_POOL_SIZE: 10

@@ -13,6 +13,7 @@ kubectl apply -k k8s/base
 - Replace placeholder image names in `k8s/base/*.yaml`.
 - Replace `api-gateway.example.com` with the production DNS name.
 - Replace `api-gateway-secrets` values with externally managed secrets.
+- Ensure `JWT_SECRET` and `API_KEY` are at least 16 characters and are not placeholder values. The gateway validates this at startup when `ENVIRONMENT=production`.
 - Prefer a managed PostgreSQL service for production; the included StatefulSet is suitable for self-hosted clusters and non-managed environments.
 - Run the migration job before rolling out a new gateway image that requires schema changes.
 
