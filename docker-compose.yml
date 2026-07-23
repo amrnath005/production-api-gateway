@@ -1,0 +1,204 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: api-gateway
+      APP_VERSION: 1.0.0
+      ENVIRONMENT: production
+      USER_SERVICE_URL: http://user-service:8002
+      ORDER_SERVICE_URL: http://order-service:8003
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql+asyncpg://gateway:gateway_password@postgres:5432/api_gateway
+      DATABASE_POOL_SIZE: 10
+      DATABASE_MAX_OVERFLOW: 20
+      DATABASE_POOL_TIMEOUT: 30
+      DATABASE_POOL_RECYCLE_SECONDS: 1800
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: http://grafana:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3).status < 500 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-gateway-migrate
+    entrypoint: ["alembic"]
+    command: ["upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://gateway:gateway_password@postgres:5432/api_gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - app-network
+
+  user-service:
+    build:
+      context: .
+      dockerfile: backend_service/Dockerfile
+    container_name: user-service
+    ports:
+      - "8002:8002"
+    environment:
+      INSTANCE_NAME: user-service-1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8002/health', timeout=3).status < 500 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  order-service:
+    build:
+      context: .
+      dockerfile: order_service/Dockerfile
+    container_name: order-service
+    ports:
+      - "8003:8003"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8003/health', timeout=3).status < 500 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: api_gateway
+      POSTGRES_USER: gateway
+      POSTGRES_PASSWORD: gateway_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gateway -d api_gateway"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9090/-/healthy"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana-oss:11.2.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:16686/"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  redis-data:
+  postgres-data:
+  grafana-data:
+
+networks:
+  app-network:
+    driver: bridge

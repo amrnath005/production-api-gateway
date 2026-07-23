@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: production-api-gateway
+  labels:
+    app.kubernetes.io/name: user-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: user-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: ghcr.io/your-org/api-gateway-user-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8002
+          env:
+            - name: INSTANCE_NAME
+              value: user-service
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: production-api-gateway
+  labels:
+    app.kubernetes.io/name: user-service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8002
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: user-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: production-api-gateway
+  labels:
+    app.kubernetes.io/name: order-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: order-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: ghcr.io/your-org/api-gateway-order-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8003
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: production-api-gateway
+  labels:
+    app.kubernetes.io/name: order-service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8003
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: order-service

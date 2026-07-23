@@ -1,0 +1,58 @@
+{
+  "title": "API Gateway Observability",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Requests/sec",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [{"expr": "rate(gateway_requests_total[1m])", "legendFormat": "requests"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(gateway_request_duration_seconds_bucket[5m])))", "legendFormat": "p95"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [{"expr": "rate(gateway_failed_requests_total[1m])", "legendFormat": "errors"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Success",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [{"expr": "rate(gateway_successful_requests_total[1m])", "legendFormat": "success"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Backend Health",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "targets": [{"expr": "gateway_backend_availability", "legendFormat": "{{backend}}"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Retry Count",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "targets": [{"expr": "rate(gateway_retry_total[1m])", "legendFormat": "retries"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Circuit Breaker",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "targets": [{"expr": "rate(gateway_circuit_open_total[1m])", "legendFormat": "circuit opens"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Healthy/Unhealthy Instances",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "targets": [
+        {"expr": "gateway_healthy_instances", "legendFormat": "healthy"},
+        {"expr": "gateway_unhealthy_instances", "legendFormat": "unhealthy"}
+      ]
+    }
+  ]
+}
