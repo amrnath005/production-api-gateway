@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "API Gateway Postgres",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "api_gateway",
+      "Username": "gateway",
+      "PassFile": "/pgadmin4/pgpass",
+      "SSLMode": "prefer"
+    }
+  }
+}

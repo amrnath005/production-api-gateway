@@ -1,0 +1,17 @@
+{
+  "title": "Infrastructure",
+  "uid": "infrastructure",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Healthy vs Unhealthy Instances",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "gateway_healthy_instances", "legendFormat": "Healthy"},
+        {"expr": "gateway_unhealthy_instances", "legendFormat": "Unhealthy"}
+      ]
+    }
+  ]
+}

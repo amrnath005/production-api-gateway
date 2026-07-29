@@ -1,0 +1,32 @@
+{
+  "title": "Gateway Overview",
+  "uid": "gateway-overview",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total Requests / sec",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(gateway_requests_total[1m]))"}]
+    },
+    {
+      "type": "stat",
+      "title": "p95 Latency",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(gateway_request_duration_seconds_bucket[5m])))"}]
+    },
+    {
+      "type": "stat",
+      "title": "Error Rate",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [{"expr": "sum(rate(gateway_failed_requests_total[1m])) / sum(rate(gateway_requests_total[1m])) * 100"}]
+    },
+    {
+      "type": "stat",
+      "title": "Active Connections",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "targets": [{"expr": "gateway_active_requests"}]
+    }
+  ]
+}

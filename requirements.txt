@@ -33,7 +33,7 @@ python-dotenv==1.2.2
 python-jose==3.5.0
 redis==5.2.1
 rsa==4.9.1
-setuptools==83.0.0
+setuptools==69.5.1
 six==1.17.0
 SQLAlchemy==2.0.36
 starlette==0.47.3

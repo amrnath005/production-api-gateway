@@ -1,0 +1,24 @@
+{
+  "title": "HTTP Requests",
+  "uid": "http-requests",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "HTTP Status Codes",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [{"expr": "sum by (status) (rate(gateway_requests_total[1m]))", "legendFormat": "{{status}}"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Request Duration Quantiles (p50, p95, p99)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum by (le) (rate(gateway_request_duration_seconds_bucket[5m])))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(gateway_request_duration_seconds_bucket[5m])))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, sum by (le) (rate(gateway_request_duration_seconds_bucket[5m])))", "legendFormat": "p99"}
+      ]
+    }
+  ]
+}

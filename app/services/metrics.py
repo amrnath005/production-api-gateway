@@ -1,5 +1,6 @@
 from prometheus_client import Counter, Gauge, Histogram
 
+# Cache Metrics
 CACHE_HITS = Counter(
     "gateway_cache_hits_total",
     "Total cache hits",
@@ -8,11 +9,6 @@ CACHE_HITS = Counter(
 CACHE_MISSES = Counter(
     "gateway_cache_misses_total",
     "Total cache misses",
-)
-
-CACHE_HIT_RATIO = Gauge(
-    "gateway_cache_hit_ratio",
-    "Current cache hit ratio",
 )
 
 CACHE_LATENCY = Histogram(
@@ -35,6 +31,18 @@ COMPRESSION_USAGE = Counter(
     "Number of compressed responses",
 )
 
+# Database Metrics
+DB_STATUS = Gauge(
+    "gateway_db_status",
+    "Database status (1 for ready, 0 for unavailable)",
+)
+
+DB_QUERIES = Counter(
+    "gateway_db_queries_total",
+    "Total database queries executed",
+)
+
+# Request & Gateway Metrics
 REQUEST_COUNT = Counter(
     "gateway_requests_total",
     "Total number of requests",
@@ -86,6 +94,7 @@ SUCCESSFUL_REQUESTS = Counter(
     ["method", "endpoint", "status"],
 )
 
+# Instance & Availability Metrics
 HEALTHY_INSTANCES = Gauge(
     "gateway_healthy_instances",
     "Number of healthy backend instances",

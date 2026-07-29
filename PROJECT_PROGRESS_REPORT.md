@@ -49,10 +49,11 @@
 - None
 
 ## Remaining Work
-- None. Feature complete and verified for production release.
+- Fixed container startup `ModuleNotFoundError: No module named 'pkg_resources'` by pinning `setuptools==69.5.1` in `requirements.txt` and adding `--ignore-installed` to `pip install --prefix=/install` across Dockerfiles.
+- Verified Docker Compose stack startup: all 10 services (`gateway`, `postgres`, `redis`, `prometheus`, `grafana`, `jaeger`, `pgadmin`, `redisinsight`, `user-service`, `order-service`) started successfully with `api-gateway` container in **Up (healthy)** state.
 
 ## Known Limitations
 - None.
 
 ## Recommended Commit Message
-`feat(gateway): complete production audit, security hardening, performance optimizations and documentation`
+`fix(docker): resolve pkg_resources missing error by pinning setuptools==69.5.1 and adding --ignore-installed`

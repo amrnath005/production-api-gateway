@@ -1,94 +1,110 @@
-# API Gateway
+# Production FastAPI API Gateway & Local Observability Platform
 
-## Local production environment with Docker
+A high-performance, production-grade **FastAPI API Gateway** and complete **Local Observability & Operations Stack** built with Python 3.12+, PostgreSQL, Redis, Prometheus, Grafana, Jaeger, OpenTelemetry, pgAdmin 4, and RedisInsight.
 
-### Run the stack
+Designed with clean architecture, strict typing, resilience patterns (Circuit Breaker, Exponential Backoff Retry, Round-Robin Load Balancing, Rate Limiting), and zero-configuration developer experience.
+
+---
+
+## 🚀 Quick Start (Zero Configuration)
+
+Spin up the entire 10-service platform with a single command:
+
 ```bash
-docker compose up --build
+docker compose up -d
+```
+*Or using Makefile:*
+```bash
+make up
 ```
 
-### Service URLs
-- Gateway: http://localhost:8000
-- User Service: http://localhost:8002
-- Order Service: http://localhost:8003
-- Redis: redis://localhost:6379/0
-- PostgreSQL: postgresql://gateway:gateway_password@localhost:5432/api_gateway
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:3000 (admin/admin)
-- Jaeger UI: http://localhost:16686
+All monitoring dashboards, database tools, cache inspectors, and microservices will automatically launch and self-configure.
 
-### Key endpoints
-```bash
-curl http://localhost:8000/api/v1/health
-curl http://localhost:8000/api/v1/ready
-curl http://localhost:8000/api/v1/health/db
-curl http://localhost:8000/api/v1/metrics
-curl http://localhost:8002/health
-curl http://localhost:8003/health
+---
+
+## 🌐 Platform Service Registry & Web UIs
+
+| Service | Local URL | Default Credentials | Description |
+| :--- | :--- | :--- | :--- |
+| **FastAPI Gateway** | `http://localhost:8000` | N/A | Core API Gateway Service |
+| **Swagger OpenAPI Docs** | `http://localhost:8000/docs` | `admin` / `admin123` | Interactive API documentation & testing |
+| **Grafana Dashboards** | `http://localhost:3000` | **Auto-Login as Admin** (`admin`/`admin`) | 10 pre-provisioned monitoring dashboards |
+| **Jaeger Tracing UI** | `http://localhost:16686` | *No Auth Required* | Visual OTLP distributed trace waterfalls |
+| **Prometheus Metrics** | `http://localhost:9090` | *No Auth Required* | Metrics collection & PromQL query engine |
+| **pgAdmin 4** | `http://localhost:5050` | `admin@admin.com` / `admin` | **Auto-connected** PostgreSQL Management UI |
+| **RedisInsight** | `http://localhost:5540` | *No Auth Required* | **Auto-connected** Redis Key & Memory GUI |
+| **PostgreSQL Database** | `localhost:5432` | `gateway` / `gateway_password` | Async Relational DB (`api_gateway`) |
+| **Redis Store** | `localhost:6379` | *No Auth Required* | In-memory cache & sliding-window rate limiter |
+
+> 📖 **Complete Documentation**:
+> - [docs/FIRST_RUN.md](docs/FIRST_RUN.md) — Beginner step-by-step first run guide.
+> - [docs/DEFAULT_CREDENTIALS.md](docs/DEFAULT_CREDENTIALS.md) — Comprehensive service & credential reference table.
+
+---
+
+## 🛡️ Architecture & Features
+
+```mermaid
+graph TD
+    Client["Client / User"] --> |HTTPS / REST| Gateway["FastAPI API Gateway (:8000)"]
+    Gateway --> RateLimit["Sliding Window Rate Limiter (Redis / In-Memory)"]
+    Gateway --> Auth["JWT & API Key Authentication"]
+    Gateway --> Cache["SHA-256 Response Cache (Redis)"]
+    Gateway --> LB["Round-Robin Load Balancer & Circuit Breaker"]
+    LB --> UserSVC["User Microservice (:8002)"]
+    LB --> OrderSVC["Order Microservice (:8003)"]
+    Gateway --> DB["Async PostgreSQL (SQLAlchemy 2.x)"]
+    Gateway --> OTel["OpenTelemetry / Jaeger Tracing"]
+    Gateway --> Prom["Prometheus Metrics (/api/v1/metrics)"]
 ```
 
-### Environment variables
-- `USER_SERVICE_URL` and `ORDER_SERVICE_URL` are set to the Docker service names by default in Compose.
-- `REDIS_URL` points to the Redis container.
-- `DATABASE_URL` points to the PostgreSQL database.
-- `DATABASE_POOL_SIZE`, `DATABASE_MAX_OVERFLOW`, `DATABASE_POOL_TIMEOUT`, and `DATABASE_POOL_RECYCLE_SECONDS` tune SQLAlchemy async connection pooling.
-- `JAEGER_ENDPOINT` targets the Jaeger container for tracing export.
-- `PROMETHEUS_URL` and `GRAFANA_URL` are used by the monitoring configuration.
+### Core Engineering Highlights
+1. **Resilience Patterns**:
+   - **Circuit Breaker**: Auto-trips after failure threshold and transitions to `HALF_OPEN` state.
+   - **Retry Service**: Exponential backoff retry with jitter on network/timeout errors.
+   - **Load Balancer**: Round-robin request distribution across healthy instances with background health monitoring.
+2. **Security & Authentication**:
+   - Salted `PBKDF2-HMAC-SHA256` password hashing (100,000 iterations).
+   - Constant-time API Key verification (`secrets.compare_digest`).
+   - Standard JWT Bearer token generation & verification.
+3. **Observability & Monitoring**:
+   - OpenTelemetry distributed tracing across FastAPI, HTTPX, Redis, and SQLAlchemy exported to Jaeger.
+   - Prometheus metrics endpoint at `/api/v1/metrics` with low-cardinality endpoint normalization.
+   - 10 provisioned Grafana dashboards covering Gateway Overview, Latency Quantiles (p50/p95/p99), Database, Redis, Circuit Breaker, Auth, Rate Limiter, and Infrastructure.
+4. **Caching & Compression**:
+   - Redis-backed GET response caching with SHA-256 hashing and TTL expiration.
+   - ETag conditional request support (`304 Not Modified`).
+   - Dynamic Gzip HTTP compression.
 
-### Secret management
-- Configuration is loaded through `pydantic-settings` in [app/core/settings.py](app/core/settings.py).
-- Sensitive values use `SecretStr` for `JWT_SECRET`, `API_KEY`, and `DATABASE_URL`.
-- Development mode allows placeholder values from [.env.example](.env.example).
-- Production mode rejects placeholder secrets, enforces minimum secret length, and requires an explicitly configured `DATABASE_URL`.
-- Access secret values in application code through `settings.get_jwt_secret()`, `settings.get_api_key()`, and `settings.get_database_url()` rather than reading fields directly.
+---
 
-### Persistence
-- PostgreSQL persistence is implemented with SQLAlchemy 2.x async sessions.
-- Alembic migrations are stored under [alembic](alembic).
-- User CRUD examples are available at `/api/v1/users` and remain protected by the configured API key.
-- More details are available in [docs/persistence.md](docs/persistence.md).
+## 🧪 Testing & Verification
 
-### Observability
-- Prometheus metrics are exposed at `/api/v1/metrics`.
-- The gateway emits counters and histograms for request volume, latency, backend traffic, retries, circuit breaker opens, success/failure counts, backend failures, cache hits/misses, Redis connections, and compression usage.
-- OpenTelemetry is enabled for FastAPI, middleware spans, and `httpx` requests.
-- Trace IDs are propagated downstream with `traceparent` and `X-Trace-ID` headers.
-- Traces are exported to Jaeger when `JAEGER_ENDPOINT` is reachable; otherwise the exporter falls back to console output.
+Run the unit and integration test suite:
 
-### Redis and Caching
-- Redis is configured via `REDIS_URL`, `REDIS_POOL_SIZE`, `CACHE_TTL_SECONDS`, and `CACHE_BYPASS`.
-- GET responses can be cached using the cache service and invalidated with `DELETE /api/v1/cache/invalidate?key=...` or `?pattern=...`.
-- The cache layer supports TTL expiration, manual invalidation, and pattern-based invalidation.
-
-### Kubernetes
-- Production Kubernetes manifests are available under [k8s/base](k8s/base).
-- The base includes namespace, ConfigMap, Secret, Deployments, Services, Ingress, resource limits, readiness/liveness probes, HPA, Redis, PostgreSQL, and migrations.
-- Deployment notes are available in [k8s/README.md](k8s/README.md).
-
-### Production Deployment
-- GitHub Actions CI/CD is defined in [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml).
-- NGINX reverse proxy and HTTPS configuration are available under [nginx](nginx).
-- Load testing is available in [load-testing/k6-gateway.js](load-testing/k6-gateway.js).
-- Production deployment and architecture docs are available in [docs/production-deployment.md](docs/production-deployment.md) and [docs/final-architecture.md](docs/final-architecture.md).
-
-### Performance
-- Gzip compression is applied for eligible GET responses when the client advertises `Accept-Encoding: gzip`.
-- ETags are generated for GET responses and honored via `If-None-Match` with `304 Not Modified` responses.
-
-### Prometheus and Grafana
-- A sample Prometheus config is available in [prometheus.yml](prometheus.yml).
-- Grafana datasource and dashboard provisioning files are available under [grafana/provisioning](grafana/provisioning).
-
-### Troubleshooting
-- If a service fails to start, inspect the container logs with `docker compose logs <service>`.
-- If the gateway cannot reach the user or order services, confirm the Docker network and service names in Compose.
-- If Grafana does not show Prometheus, wait for the provisioning step to finish and refresh the UI.
-
-### Example Usage
 ```bash
-pip install -r requirements.txt
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-curl http://127.0.0.1:8000/api/v1/health
-curl http://127.0.0.1:8000/api/v1/metrics
-curl -X DELETE "http://127.0.0.1:8000/api/v1/cache/invalidate?pattern=cache:*"
+pytest
 ```
+*Or using Makefile:*
+```bash
+make test
+```
+
+Execute load testing & benchmark suites:
+```bash
+make benchmark
+```
+
+---
+
+## 📁 Repository Documentation Index
+
+- [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) — Local platform development workflows.
+- [docs/FIRST_RUN.md](docs/FIRST_RUN.md) — Beginner step-by-step first run walkthrough.
+- [docs/DEFAULT_CREDENTIALS.md](docs/DEFAULT_CREDENTIALS.md) — Full service & credentials list.
+- [docs/Architecture.md](docs/Architecture.md) — Mermaid system architecture & sequence diagrams.
+- [docs/MONITORING_GUIDE.md](docs/MONITORING_GUIDE.md) — Prometheus metrics reference.
+- [docs/OBSERVABILITY_GUIDE.md](docs/OBSERVABILITY_GUIDE.md) — OpenTelemetry & Jaeger tracing guide.
+- [docs/GRAFANA_GUIDE.md](docs/GRAFANA_GUIDE.md) — Provisioned Grafana dashboards overview.
+- [docs/LOAD_TESTING.md](docs/LOAD_TESTING.md) — k6 & Locust benchmark suite.
+- [docs/Deployment.md](docs/Deployment.md) — Production Docker & Kubernetes deployment guide.

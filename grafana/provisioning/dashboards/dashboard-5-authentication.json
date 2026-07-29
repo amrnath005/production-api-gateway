@@ -1,0 +1,14 @@
+{
+  "title": "Authentication",
+  "uid": "authentication",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Login Attempts",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [{"expr": "sum by (status) (rate(gateway_requests_total{endpoint=\"/login\"}[1m]))", "legendFormat": "{{status}}"}]
+    }
+  ]
+}

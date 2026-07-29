@@ -1,0 +1,14 @@
+{
+  "title": "Application Health",
+  "uid": "application-health",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Gateway Readiness",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 0},
+      "targets": [{"expr": "gateway_backend_availability"}]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "title": "Rate Limiter",
+  "uid": "rate-limiter",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "HTTP 429 Rate Limit Responses",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [{"expr": "rate(gateway_requests_total{status=\"429\"}[1m])", "legendFormat": "Blocked Requests"}]
+    }
+  ]
+}

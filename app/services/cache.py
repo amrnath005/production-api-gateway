@@ -21,6 +21,7 @@ class CacheService:
                 import redis.asyncio as redis
             except ImportError:
                 self.is_connected = False
+                REDIS_CONNECTIONS.set(0)
                 return
 
             self._client = redis.from_url(
@@ -33,12 +34,15 @@ class CacheService:
             try:
                 await self._client.ping()
                 self.is_connected = True
+                REDIS_CONNECTIONS.set(1)
                 return
             except Exception:
                 self.is_connected = False
+                REDIS_CONNECTIONS.set(0)
                 return
 
         self.is_connected = True
+        REDIS_CONNECTIONS.set(1)
 
     async def health(self) -> dict[str, Any]:
         await self.connect()
@@ -116,6 +120,9 @@ class CacheService:
                     await self._client.close()
             except Exception:
                 pass
+            finally:
+                self.is_connected = False
+                REDIS_CONNECTIONS.set(0)
 
 
 cache_service = CacheService()

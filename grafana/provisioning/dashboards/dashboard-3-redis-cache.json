@@ -1,0 +1,23 @@
+{
+  "title": "Redis Cache",
+  "uid": "redis-cache",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Cache Hits vs Misses",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "rate(gateway_cache_hits_total[1m])", "legendFormat": "Hits"},
+        {"expr": "rate(gateway_cache_misses_total[1m])", "legendFormat": "Misses"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Redis Latency",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(gateway_cache_latency_seconds_bucket[5m])))", "legendFormat": "Latency p95"}]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "title": "Database Performance",
+  "uid": "database-performance",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Database Status",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 0},
+      "targets": [{"expr": "gateway_db_status", "legendFormat": "Status"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Database Query Execution Rate",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 0},
+      "targets": [{"expr": "rate(gateway_db_queries_total[1m])", "legendFormat": "Queries/sec"}]
+    }
+  ]
+}

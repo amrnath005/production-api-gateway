@@ -1,11 +1,10 @@
 import gzip
 import hashlib
-import time
 from typing import Any
 
 from starlette.responses import Response
 
-from app.services.metrics import CACHE_HIT_RATIO, COMPRESSION_USAGE
+from app.services.metrics import COMPRESSION_USAGE
 
 
 class PerformanceService:

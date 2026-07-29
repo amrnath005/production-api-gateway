@@ -9,7 +9,7 @@ from app.core.settings import settings
 from app.services.circuit_breaker import circuit_breaker
 from app.services.load_balancer import load_balancer
 from app.services.retry import retry_service
-from app.services.metrics import BACKEND_FAILURES, BACKEND_REQUESTS, FAILED_REQUESTS, REQUEST_COUNT, REQUEST_LATENCY, SUCCESSFUL_REQUESTS
+from app.services.metrics import BACKEND_FAILURES, BACKEND_REQUESTS
 
 tracer = trace.get_tracer("gateway.gateway_service")
 
@@ -97,17 +97,12 @@ class GatewayService:
                 response = await retry_service.execute(send)
 
                 circuit_breaker.record_success(backend_url)
-                REQUEST_COUNT.labels(method=method, endpoint=path or "/", status=response.status_code).inc()
-                REQUEST_LATENCY.labels(method=method, endpoint=path or "/").observe(response.elapsed.total_seconds())
-                SUCCESSFUL_REQUESTS.labels(method=method, endpoint=path or "/", status=response.status_code).inc()
 
                 return response
 
             except httpx.TimeoutException as exc:
                 circuit_breaker.record_failure(backend_url)
                 BACKEND_FAILURES.labels(service=service, backend=backend_url).inc()
-                REQUEST_COUNT.labels(method=method, endpoint=path or "/", status="504").inc()
-                FAILED_REQUESTS.labels(method=method, endpoint=path or "/", status="504").inc()
                 raise BackendTimeoutError(service) from exc
 
             except (
@@ -117,8 +112,6 @@ class GatewayService:
 
                 circuit_breaker.record_failure(backend_url)
                 BACKEND_FAILURES.labels(service=service, backend=backend_url).inc()
-                REQUEST_COUNT.labels(method=method, endpoint=path or "/", status="5xx").inc()
-                FAILED_REQUESTS.labels(method=method, endpoint=path or "/", status="5xx").inc()
                 raise exc
 
 

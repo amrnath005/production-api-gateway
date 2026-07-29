@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import hash_password
 from app.db.models.user import User
 from app.models.user import UserCreate, UserUpdate
+from app.services.metrics import DB_QUERIES
 
 
 class UserRepository:
@@ -11,6 +12,7 @@ class UserRepository:
         self._session = session
 
     async def create(self, data: UserCreate) -> User:
+        DB_QUERIES.inc()
         user_dict = data.model_dump()
         raw_password = user_dict.pop("password", None)
         if raw_password:
@@ -23,23 +25,28 @@ class UserRepository:
         return user
 
     async def get(self, user_id: int) -> User | None:
+        DB_QUERIES.inc()
         return await self._session.get(User, user_id)
 
     async def get_by_username(self, username: str) -> User | None:
+        DB_QUERIES.inc()
         result = await self._session.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> User | None:
+        DB_QUERIES.inc()
         result = await self._session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
     async def list(self, limit: int = 50, offset: int = 0) -> list[User]:
+        DB_QUERIES.inc()
         result = await self._session.execute(
             select(User).order_by(User.id).limit(limit).offset(offset)
         )
         return list(result.scalars().all())
 
     async def update(self, user_id: int, data: UserUpdate) -> User | None:
+        DB_QUERIES.inc()
         user = await self.get(user_id)
         if user is None:
             return None
@@ -57,6 +64,7 @@ class UserRepository:
         return user
 
     async def delete(self, user_id: int) -> bool:
+        DB_QUERIES.inc()
         user = await self.get(user_id)
         if user is None:
             return False

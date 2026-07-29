@@ -1,0 +1,14 @@
+{
+  "title": "Circuit Breaker",
+  "uid": "circuit-breaker",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Circuit Breaker Trips",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [{"expr": "rate(gateway_circuit_open_total[1m])", "legendFormat": "Trips"}]
+    }
+  ]
+}

@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --upgrade pip \
-    && pip install --prefix=/install -r requirements.txt
+    && pip install --ignore-installed --prefix=/install -r requirements.txt
 
 FROM python:3.12-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \

@@ -1,6 +1,7 @@
 from typing import Any
-
 from sqlalchemy import text
+
+from app.services.metrics import DB_STATUS
 
 
 async def check_database_health(session_factory: Any | None = None) -> dict[str, Any]:
@@ -12,8 +13,10 @@ async def check_database_health(session_factory: Any | None = None) -> dict[str,
     try:
         async with session_factory() as session:
             await session.execute(text("SELECT 1"))
+        DB_STATUS.set(1)
         return {"status": "ready"}
     except Exception as exc:
+        DB_STATUS.set(0)
         return {
             "status": "unavailable",
             "error": exc.__class__.__name__,
