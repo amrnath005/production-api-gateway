@@ -74,9 +74,13 @@ jobs:
 
       - name: Run migrations
         run: alembic upgrade head
+        env:
+          PYTHONPATH: .
 
       - name: Run tests
-        run: python -m pytest
+        run: pytest
+        env:
+          PYTHONPATH: .
 
       - name: Audit Python dependencies
         run: |
