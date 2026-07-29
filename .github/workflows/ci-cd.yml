@@ -130,7 +130,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ steps.prep.outputs.image_owner }}/${{ matrix.image }}:${{ github.sha }},${{ env.REGISTRY }}/${{ steps.prep.outputs.image_owner }}/${{ matrix.image }}:latest
 
       - name: Scan container image
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         continue-on-error: true
         env:
           TRIVY_USERNAME: ${{ github.actor }}
