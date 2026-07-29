@@ -25,7 +25,7 @@ opentelemetry-sdk==1.21.0
 prometheus-client==0.22.0
 pyasn1==0.6.4
 pydantic==2.13.4
-pydantic_core==2.46.4
+pydantic_core==2.47.0
 pydantic-settings==2.11.0
 pytest==9.1.1
 pytest-asyncio==1.4.0
