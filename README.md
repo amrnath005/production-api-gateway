@@ -1,14 +1,42 @@
-# Production FastAPI API Gateway & Local Observability Platform
+# Production FastAPI API Gateway & Observability Platform
 
-A high-performance, production-grade **FastAPI API Gateway** and complete **Local Observability & Operations Stack** built with Python 3.12+, PostgreSQL, Redis, Prometheus, Grafana, Jaeger, OpenTelemetry, pgAdmin 4, and RedisInsight.
+[![CI/CD Pipeline](https://github.com/amrnath005/production-api-gateway/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/amrnath005/production-api-gateway/actions/workflows/ci-cd.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python Version](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.139-green.svg)](https://fastapi.tiangolo.com/)
 
-Designed with clean architecture, strict typing, resilience patterns (Circuit Breaker, Exponential Backoff Retry, Round-Robin Load Balancing, Rate Limiting), and zero-configuration developer experience.
+A high-performance, production-grade **FastAPI API Gateway** and **10-Service Observability Platform** built with Python 3.12+, PostgreSQL 16, Redis 7, Prometheus, Grafana, Jaeger, OpenTelemetry, pgAdmin 4, and RedisInsight.
+
+Designed with clean architecture, strict typing, resilience patterns (Circuit Breaker, Exponential Backoff Retry, Round-Robin Load Balancing, Sliding Window Rate Limiting), and zero-configuration developer experience.
 
 ---
 
-## 🚀 Quick Start (Zero Configuration)
+## 🏛️ System Architecture
 
-Spin up the entire 10-service platform with a single command:
+```mermaid
+graph TD
+    Client["Client Applications (Web / Mobile / REST API)"] --> |HTTPS / REST| Gateway["FastAPI API Gateway (:8000)"]
+    
+    subgraph Gateway Core Pipeline
+        Gateway --> RateLimit["Sliding Window Rate Limiter (Redis)"]
+        Gateway --> Auth["JWT & API Key Security"]
+        Gateway --> Cache["SHA-256 Response Cache (Redis)"]
+        Gateway --> LB["Round-Robin Load Balancer & Circuit Breaker"]
+    end
+
+    LB --> UserSVC["User Microservice (:8002)"]
+    LB --> OrderSVC["Order Microservice (:8003)"]
+
+    Gateway --> DB["Async PostgreSQL 16 (SQLAlchemy 2.x)"]
+    Gateway --> OTel["OpenTelemetry / Jaeger Tracing"]
+    Gateway --> Prom["Prometheus Metrics Collector"]
+```
+
+---
+
+## ⚡ Quick Start (Zero Configuration)
+
+Spin up the entire platform in seconds:
 
 ```bash
 docker compose up -d
@@ -18,93 +46,49 @@ docker compose up -d
 make up
 ```
 
-All monitoring dashboards, database tools, cache inspectors, and microservices will automatically launch and self-configure.
+All 10 services, monitoring dashboards, and database administration GUIs will launch and self-configure automatically.
 
----
+### Platform Web UIs & Endpoints
 
-## 🌐 Platform Service Registry & Web UIs
-
-| Service | Local URL | Default Credentials | Description |
+| Service | Endpoint URL | Default Credentials | Description |
 | :--- | :--- | :--- | :--- |
-| **FastAPI Gateway** | `http://localhost:8000` | N/A | Core API Gateway Service |
-| **Swagger OpenAPI Docs** | `http://localhost:8000/docs` | `admin` / `admin123` | Interactive API documentation & testing |
-| **Grafana Dashboards** | `http://localhost:3000` | **Auto-Login as Admin** (`admin`/`admin`) | 10 pre-provisioned monitoring dashboards |
+| **FastAPI Gateway** | `http://localhost:8000` | N/A | Core Gateway Service |
+| **Swagger OpenAPI Docs** | `http://localhost:8000/docs` | `admin` / `admin123` | Interactive API documentation |
+| **Grafana Dashboards** | `http://localhost:3000` | **Auto-Login as Admin** (`admin`/`admin`) | 10 pre-provisioned operational dashboards |
 | **Jaeger Tracing UI** | `http://localhost:16686` | *No Auth Required* | Visual OTLP distributed trace waterfalls |
-| **Prometheus Metrics** | `http://localhost:9090` | *No Auth Required* | Metrics collection & PromQL query engine |
-| **pgAdmin 4** | `http://localhost:5050` | `admin@admin.com` / `admin` | **Auto-connected** PostgreSQL Management UI |
-| **RedisInsight** | `http://localhost:5540` | *No Auth Required* | **Auto-connected** Redis Key & Memory GUI |
-| **PostgreSQL Database** | `localhost:5432` | `gateway` / `gateway_password` | Async Relational DB (`api_gateway`) |
-| **Redis Store** | `localhost:6379` | *No Auth Required* | In-memory cache & sliding-window rate limiter |
-
-> 📖 **Complete Documentation**:
-> - [docs/FIRST_RUN.md](docs/FIRST_RUN.md) — Beginner step-by-step first run guide.
-> - [docs/DEFAULT_CREDENTIALS.md](docs/DEFAULT_CREDENTIALS.md) — Comprehensive service & credential reference table.
+| **Prometheus Metrics** | `http://localhost:9090` | *No Auth Required* | Metrics collection engine |
+| **pgAdmin 4** | `http://localhost:5050` | `admin@admin.com` / `admin` | **Auto-connected** PostgreSQL UI |
+| **RedisInsight** | `http://localhost:5540` | *No Auth Required* | **Auto-connected** Redis GUI |
 
 ---
 
-## 🛡️ Architecture & Features
+## 🌟 Key Features
 
-```mermaid
-graph TD
-    Client["Client / User"] --> |HTTPS / REST| Gateway["FastAPI API Gateway (:8000)"]
-    Gateway --> RateLimit["Sliding Window Rate Limiter (Redis / In-Memory)"]
-    Gateway --> Auth["JWT & API Key Authentication"]
-    Gateway --> Cache["SHA-256 Response Cache (Redis)"]
-    Gateway --> LB["Round-Robin Load Balancer & Circuit Breaker"]
-    LB --> UserSVC["User Microservice (:8002)"]
-    LB --> OrderSVC["Order Microservice (:8003)"]
-    Gateway --> DB["Async PostgreSQL (SQLAlchemy 2.x)"]
-    Gateway --> OTel["OpenTelemetry / Jaeger Tracing"]
-    Gateway --> Prom["Prometheus Metrics (/api/v1/metrics)"]
-```
-
-### Core Engineering Highlights
-1. **Resilience Patterns**:
-   - **Circuit Breaker**: Auto-trips after failure threshold and transitions to `HALF_OPEN` state.
-   - **Retry Service**: Exponential backoff retry with jitter on network/timeout errors.
-   - **Load Balancer**: Round-robin request distribution across healthy instances with background health monitoring.
-2. **Security & Authentication**:
-   - Salted `PBKDF2-HMAC-SHA256` password hashing (100,000 iterations).
-   - Constant-time API Key verification (`secrets.compare_digest`).
-   - Standard JWT Bearer token generation & verification.
-3. **Observability & Monitoring**:
-   - OpenTelemetry distributed tracing across FastAPI, HTTPX, Redis, and SQLAlchemy exported to Jaeger.
-   - Prometheus metrics endpoint at `/api/v1/metrics` with low-cardinality endpoint normalization.
-   - 10 provisioned Grafana dashboards covering Gateway Overview, Latency Quantiles (p50/p95/p99), Database, Redis, Circuit Breaker, Auth, Rate Limiter, and Infrastructure.
-4. **Caching & Compression**:
-   - Redis-backed GET response caching with SHA-256 hashing and TTL expiration.
-   - ETag conditional request support (`304 Not Modified`).
-   - Dynamic Gzip HTTP compression.
+- **Resilience Engine**: Circuit Breaker state machine, exponential backoff retries with jitter, and background health-monitored load balancing.
+- **Low-Latency Acceleration**: SHA-256 Redis response caching with ETag support (`304 Not Modified`) and dynamic Gzip compression.
+- **Enterprise Security**: Salted `PBKDF2-HMAC-SHA256` password hashing (100,000 iterations), constant-time API Key validation (`secrets.compare_digest`), and JWT Bearer authorization.
+- **Zero-Cardinality Observability**: W3C `traceparent` trace propagation, contextual JSON logging, and normalized low-cardinality Prometheus metrics.
 
 ---
 
-## 🧪 Testing & Verification
+## 📚 Documentation Index
 
-Run the unit and integration test suite:
+The repository features comprehensive CNCF-standard enterprise documentation:
 
-```bash
-pytest
-```
-*Or using Makefile:*
-```bash
-make test
-```
-
-Execute load testing & benchmark suites:
-```bash
-make benchmark
-```
+- 📖 **[PROJECT_REPORT.md](PROJECT_REPORT.md)** — Master System Specification & Entry Point
+- 🏛️ **[docs/architecture/overview.md](docs/architecture/overview.md)** — Architecture Overview & Design Decisions
+- 📖 **[docs/backend/api-reference.md](docs/backend/api-reference.md)** — REST API Reference & Endpoint Specification
+- 📊 **[docs/observability/prometheus.md](docs/observability/prometheus.md)** — Metrics & Observability Guide
+- 🚀 **[docs/deployment/local-setup.md](docs/deployment/local-setup.md)** — Quick Start & Local Setup Manual
+- 🛡️ **[docs/security/security.md](docs/security/security.md)** — Security Architecture & OWASP Mitigation
+- 🧪 **[docs/testing/testing.md](docs/testing/testing.md)** — Automated Pytest & Load Test Benchmarks
+- 🎓 **[docs/interview/interview-guide.md](docs/interview/interview-guide.md)** — 100+ Software Engineering Interview Q&As
 
 ---
 
-## 📁 Repository Documentation Index
+## 🤝 Contributing & License
 
-- [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) — Local platform development workflows.
-- [docs/FIRST_RUN.md](docs/FIRST_RUN.md) — Beginner step-by-step first run walkthrough.
-- [docs/DEFAULT_CREDENTIALS.md](docs/DEFAULT_CREDENTIALS.md) — Full service & credentials list.
-- [docs/Architecture.md](docs/Architecture.md) — Mermaid system architecture & sequence diagrams.
-- [docs/MONITORING_GUIDE.md](docs/MONITORING_GUIDE.md) — Prometheus metrics reference.
-- [docs/OBSERVABILITY_GUIDE.md](docs/OBSERVABILITY_GUIDE.md) — OpenTelemetry & Jaeger tracing guide.
-- [docs/GRAFANA_GUIDE.md](docs/GRAFANA_GUIDE.md) — Provisioned Grafana dashboards overview.
-- [docs/LOAD_TESTING.md](docs/LOAD_TESTING.md) — k6 & Locust benchmark suite.
-- [docs/Deployment.md](docs/Deployment.md) — Production Docker & Kubernetes deployment guide.
+- **Contributing**: Please review [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/development/coding-standards.md](docs/development/coding-standards.md).
+- **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- **Security Policy**: [SECURITY.md](SECURITY.md).
+- **License**: Released under the [MIT License](LICENSE).
