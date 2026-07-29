@@ -9,6 +9,10 @@ description = "Production FastAPI API Gateway & Observability Platform"
 readme = "README.md"
 requires-python = ">=3.12"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-ra -q"
