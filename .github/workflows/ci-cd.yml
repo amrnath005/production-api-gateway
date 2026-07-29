@@ -104,9 +104,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Lowercase Registry / Image Owner
+      - name: Prepare Repository Owner Output
+        id: prep
         run: |
-          echo "IMAGE_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "image_owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -127,14 +128,14 @@ jobs:
           load: ${{ github.event_name == 'pull_request' }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.image }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.image }}:latest
+            ${{ env.REGISTRY }}/${{ steps.prep.outputs.image_owner }}/${{ matrix.image }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.prep.outputs.image_owner }}/${{ matrix.image }}:latest
 
       - name: Scan container image
         uses: aquasecurity/trivy-action@0.24.0
         continue-on-error: true
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.image }}:${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ steps.prep.outputs.image_owner }}/${{ matrix.image }}:${{ github.sha }}
           format: sarif
           output: trivy-${{ matrix.image }}.sarif
           severity: CRITICAL,HIGH
@@ -156,9 +157,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Lowercase Registry / Image Owner
+      - name: Prepare Repository Owner Output
+        id: prep
         run: |
-          echo "IMAGE_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "image_owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Configure kubectl
         run: |
@@ -169,9 +171,9 @@ jobs:
       - name: Deploy manifests
         run: |
           kubectl kustomize k8s/base \
-            | sed "s|ghcr.io/your-org/api-gateway:latest|${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/api-gateway:${{ github.sha }}|g" \
-            | sed "s|ghcr.io/your-org/api-gateway-user-service:latest|${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/api-gateway-user-service:${{ github.sha }}|g" \
-            | sed "s|ghcr.io/your-org/api-gateway-order-service:latest|${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/api-gateway-order-service:${{ github.sha }}|g" \
+            | sed "s|ghcr.io/your-org/api-gateway:latest|${{ env.REGISTRY }}/${{ steps.prep.outputs.image_owner }}/api-gateway:${{ github.sha }}|g" \
+            | sed "s|ghcr.io/your-org/api-gateway-user-service:latest|${{ env.REGISTRY }}/${{ steps.prep.outputs.image_owner }}/api-gateway-user-service:${{ github.sha }}|g" \
+            | sed "s|ghcr.io/your-org/api-gateway-order-service:latest|${{ env.REGISTRY }}/${{ env.REGISTRY }}/${{ steps.prep.outputs.image_owner }}/api-gateway-order-service:${{ github.sha }}|g" \
             | kubectl apply -f -
 
       - name: Wait for rollout
