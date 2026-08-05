@@ -54,7 +54,7 @@ jobs:
       PYTHONPATH: .
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -102,7 +102,7 @@ jobs:
             dockerfile: order_service/Dockerfile
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Prepare Repository Owner Output
         id: prep
@@ -156,7 +156,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_K8S_DEPLOY == 'true'
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Prepare Repository Owner Output
         id: prep
